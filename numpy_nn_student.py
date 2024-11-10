@@ -106,8 +106,8 @@ class NeuralNetwork:
         # flat the images to 1D
         dim_1 = img.reshape(img.shape[0], img.shape[1] * img.shape[2])
         # nomalize the images with 255
-        normal = dim_1 / 255.0
-        return normal
+        normal = dim_1 / 255.0 # normalize to [0, 1]
+        return normal # （60000, 784）
 
     def Task3_input_preprocessing(self, x_train: np.ndarray, x_test: np.ndarray) -> tuple:
         #process the input data
@@ -127,7 +127,7 @@ class NeuralNetwork:
         # fancy indexing process
         out_hot_vector[np.arange(len(y)), y] = 1
         # put the one-hot vector to the output
-        return out_hot_vector
+        return out_hot_vector # (60000, 10)
 
     def Task4_output_processing(self, y_train: np.ndarray, y_test: np.ndarray) -> tuple:
         self.y_train = self.output_processing(y_train)
@@ -149,7 +149,7 @@ class NeuralNetwork:
             n: number of columns
             return random weights
         """
-        return np.random.randn(m, n) * 1 / np.sqrt(n)
+        return np.random.randn(m, n) * 1 / np.sqrt(n) 
 
     # define matrix weights for each layer
     def Task5_6_creating_and_initializing_matrices_of_weights(self) -> dict:
@@ -160,7 +160,7 @@ class NeuralNetwork:
             'w2': self.layer_weights(128, 64),
             'w3': self.layer_weights(64, 10)
         }
-        self.weights = weights
+        self.weights = weights  
         print(f"[***Task5-6***] Creating and initializing matrices of weights")
         print(f"w1 shape: {weights['w1'].shape}")
         print(f"w2 shape: {weights['w2'].shape}")
@@ -173,17 +173,15 @@ class NeuralNetwork:
             Function: f(x) = 1 / (1 + e^(-x))
             Use this funciton as the activation function  for the hidden layers
                 put values between 0 and 1
-            Args:
-                x: numpy array
-            returns:
-                numpy array
+            x: numpy array, batch handling the input data
+            returns: numpy array
         """
         try:
             exponent = np.exp(-x)
         except OverflowError:
             print(f"[!!!] Sigmod OverflowError: {x}")
             exponent = np.clip(x, -500, 500)
-        return 1 / (1 + exponent)
+        return 1 / (1 + exponent) 
 
     def softmax(self, x: np.ndarray) -> np.ndarray:
         """ softmax function
@@ -207,7 +205,7 @@ class NeuralNetwork:
         """
         s = self.sigmod(x)
         # then calculate the derivative of the sigmoid
-        return s * (1 - s)
+        return s * (1 - s) 
 
 
 
@@ -271,7 +269,7 @@ class NeuralNetwork:
         z3 = np.dot(a2, self.weights['w3'])
         a3 = self.softmax(z3)
 
-        return (a1, a2, a3)
+        return (z1, a1, z2, a2, z3, a3)
 
     def predict(self, x):
         """ For handling the prediction 
@@ -279,10 +277,10 @@ class NeuralNetwork:
                 x: numpy array of images
                 """
         # input_data = x.reshape(1, 784) / 255.0  # 确保归一化到 [0, 1] 范围
-        a1, a2, a3 = self.forward_pass(x)
+        z1, a1, z2, a2, z3, a3 = self.forward_pass(x)
         
-        print(f"output: {a3}")
-        print(f"output shape: {a3.shape} ndim: {a3.ndim}")
+        # print(f"output: {a3}")
+        # print(f"output shape: {a3.shape} ndim: {a3.ndim}")
 
         return np.argmax(a3)
     """
@@ -337,6 +335,9 @@ class NeuralNetwork:
     def backpropagation(self, 
                         x: np.ndarray, 
                         y: np.ndarray, 
+                        z1: np.ndarray,
+                        z2: np.ndarray,
+                        z3: np.ndarray,
                         a1: np.ndarray, 
                         a2: np.ndarray, 
                         a3: np.ndarray) -> tuple:
@@ -344,10 +345,10 @@ class NeuralNetwork:
         error3 = a3 - y  # (60000, 10)
         delta3_weight = np.dot(a2.T, error3)  # (64, 10)
 
-        error2 = np.dot(error3, self.weights['w3'].T) * self.sigmoid_prime(a2) # (60000, 64)
+        error2 = np.dot(error3, self.weights['w3'].T) * self.sigmoid_prime(z2) # (60000, 64)
         delta2_weight = np.dot(a1.T, error2) #  (128, 64)
 
-        error1 = np.dot(error2, self.weights['w2'].T) * self.sigmoid_prime(a1) # (60000, 128)
+        error1 = np.dot(error2, self.weights['w2'].T) * self.sigmoid_prime(z1) # (60000, 128)
         delta1_weight = np.dot(x.T, error1) # (784, 128)
         
         return (delta1_weight, delta2_weight, delta3_weight)
@@ -378,7 +379,7 @@ class NeuralNetwork:
         """
         
         # a3(60000, 10) is the output of the network  
-        a1, a2, a3 = self.forward_pass(x)
+        z1, a1, z2, a2, z3, a3 = self.forward_pass(x)
 
         # index set of the maximum value of the array
         x_test_max = np.argmax(a3, axis=1)
@@ -419,8 +420,8 @@ class NeuralNetwork:
                 # reshape the input data to 2D array
                 x_batch = x_batch.reshape(1, -1)
                 y_batch = y_batch.reshape(1, -1)
-                a1, a2, a3 = self.forward_pass(x_batch)
-                delta1_weight, delta2_weight, delta3_weight = self.backpropagation(x_batch, y_batch, a1, a2, a3)
+                z1, a1, z2, a2, z3, a3 = self.forward_pass(x_batch)
+                delta1_weight, delta2_weight, delta3_weight = self.backpropagation(x_batch, y_batch, z1, z2, z3, a1, a2, a3)
                 self.weight_updates(delta1_weight, delta2_weight, delta3_weight, learning_rate)
             
             # compute the error rate
@@ -447,8 +448,8 @@ class NeuralNetwork:
 
                 x_batch = x[i:i+batch_size]
                 y_batch = y[i:i+batch_size]
-                a1, a2, a3 = self.forward_pass(x_batch)
-                delta1_weight, delta2_weight, delta3_weight = self.backpropagation(x_batch, y_batch, a1, a2, a3)
+                z1, a1, z2, a2, z3, a3 = self.forward_pass(x_batch)
+                delta1_weight, delta2_weight, delta3_weight = self.backpropagation(x_batch, y_batch, z1, z2, z3, a1, a2, a3)
                 self.weight_updates(delta1_weight, delta2_weight, delta3_weight, learning_rate)
             
             # compute the error rate
@@ -523,6 +524,7 @@ class HandWritingInputView:
 
     def draw(self, x, y):
         """Draw a point on the canvas"""
+        # self.image[y-5:y+5, x-5:x+5] = 1  # use a 9x9 block
         self.image[y-3:y+3, x-3:x+3] = 1  # use a 7x7 block
         # self.image[y-2:y+3, x-2:x+3] = 1  # 5 X 5
         self.im.set_data(self.image)
@@ -560,7 +562,7 @@ class HandWritingInputView:
 
 
 # Step 1: Generate the model
-if  1 == 1:
+if  1 == 0:
     """ Task 0 - 19"""
     nn = NeuralNetwork(784, 128, 10, 0.001)
     nn.Task1_reading_the_MNIST_files()
@@ -583,11 +585,11 @@ if  1 == 1:
 
     """ Task 16-18"""
     if 1 == 0:
-        nn.batch_training(nn.x_train, nn.y_train, nn.x_test, nn.y_test, epochs=30, batch_size=64, learning_rate=0.001)
+        nn.batch_training(nn.x_train, nn.y_train, nn.x_test, nn.y_test, epochs=60, batch_size=64, learning_rate=0.001)
         nn.save_model(PATH_LOCAL_MODEL)
 
 # Step 2: Test the model with handerwritting input
-if 1 == 0:
+if 1 == 1:
     """ Test the model with handerwritting input 
     1. Draw a digit on the canvas
     2. Press the button to predict the digit
