@@ -13,7 +13,13 @@ from matplotlib.widgets import Button
 
 #pip install scipy
 
-
+# The local model path
+PATH_LOCAL_MODEL = './model_weights.npz'
+# MNIST dataset path
+PATH_X_TRAIN = './mnist/train-images.idx3-ubyte'
+PATH_Y_TRAIN = './mnist/train-labels.idx1-ubyte'
+PATH_X_TEST = './mnist/t10k-images.idx3-ubyte'
+PATH_Y_TEST = './mnist/t10k-labels.idx1-ubyte'
 
 class NeuralNetwork:
     def __init__(self, input_size, hidden_size, output_size, learning_rate):
@@ -36,14 +42,15 @@ class NeuralNetwork:
     def Task1_reading_the_MNIST_files(self) -> tuple:
         """ reading the MNIST files into Python ndarrays
         """
-        self.x_train = self.read_idx('./mnist/train-images.idx3-ubyte')
-        self.y_train = self.read_idx('./mnist/train-labels.idx1-ubyte')   
-        self.x_test = self.read_idx('./mnist/t10k-images.idx3-ubyte')
-        self.y_test = self.read_idx('./mnist/t10k-labels.idx1-ubyte')
+        self.x_train = self.read_idx(PATH_X_TRAIN)
+        self.y_train = self.read_idx(PATH_Y_TRAIN)   
+        self.x_test = self.read_idx(PATH_X_TEST)
+        self.y_test = self.read_idx(PATH_Y_TEST)
+        print(f"[***Task1***] MNIST files shape:")
         print(f"x_train shape:{self.x_train.shape} dimensions: {self.x_train.ndim}")
-        print(f"x_train shape:{self.y_train.shape} dimensions: {self.y_train.ndim}")
-        print(f"x_train shape:{self.x_test.shape} dimensions: {self.x_test.ndim}")
-        print(f"x_train shape:{self.y_test.shape} dimensions: {self.y_test.ndim}")
+        print(f"y_train shape:{self.y_train.shape} dimensions: {self.y_train.ndim}")
+        print(f"x_test shape:{self.x_test.shape} dimensions: {self.x_test.ndim}")
+        print(f"y_test shape:{self.y_test.shape} dimensions: {self.y_test.ndim}")
         return self.x_train, self.y_train, self.x_test, self.y_test
 
     """
@@ -51,56 +58,53 @@ class NeuralNetwork:
     of each ndarray?
     
     Answer:
-        x_train shape:(60000, 28, 28)  
-        x_train.ndim: 3
-        This means that the x_train array has 60000 images, each image is 28x28 pixels.
-        The dimension is 3 which means it is a 3D array and the first dimension is the number of images,
-        the second and third dimensions are the height and width of the image.
+        MNIST files shape:
+        x_train shape:(60000, 28, 28) dimensions: 3
+        y_train shape:(60000,) dimensions: 1
+        x_test shape:(10000, 28, 28) dimensions: 3
+        y_test shape:(10000,) dimensions: 1
 
-        y_train shape:(60000,)
-        y_train.ndim: 1
+        1. x_train shape:(60000, 28, 28) dimensions: 3
+        We can see that the shapes are different for each ndarray.
+        The x_train array has 60000 images, each image is 28x28 pixels.
+        Dimensions are 3 which means it is a 3D array.
+        The first dimension is the number of images, the second and third dimensions are the height and width of the image.
+
+        2. y_train shape:(60000,) y_train.ndim: 1
         This means that the y_train array has 60000 labels, one for each image in x_train.
         This is a 1D array. The length of the array is the same as the number of images in x_train.
 
-        x_test shape:(10000, 28, 28)
-        x_test.ndim: 3
+        3. x_test shape:(10000, 28, 28) x_test.ndim: 3
         This means that the x_test array has 10000 images, each image is 28x28 pixels.
-        This is a 3D array and the first dimension is the number of images,
-        the second and third dimensions are the height and width of the image.
+        The dimension is the same as x_train.
 
-        y_test shape:(10000,)
-        y_test.ndim: 1
+        4. y_test shape:(10000,)  y_test.ndim: 1
         This means that the y_test array has 10000 labels, one for each image in x_test.
-        This is a 1D array. The length of the array is the same as the number of images in x_test.
+        This is a 1D array. The length is the samee as x_test.
 
     """
 
     # Task 2: visualize a few bitmap images
-    def Task2_visualize_a_few_bitmap_images(self, x_train: np.ndarray) -> None:
+    def Task2_visualize_a_few_bitmap_images(self, x_train: np.ndarray, show: bool) -> None:
         """ visualize a few bitmap images
         """
+        print(f"[***Task2***] Visualize a few bitmap images")
         # plot the first 5 images
-        for i in range(5):
-            plt.subplot(1, 5, i+1)
+        for i in range(25):
+            plt.subplot(5, 5, i+1)
             plt.imshow(x_train[i])
-        plt.show()
-        # image = x_train[1]
-        # plt.imshow(image)
-        # # plt.show()
-
+        if show is True:
+            plt.show()
+     
 
     # Task 3: input pre-preprocessing    
-
     def input_preprocessing(self, img: np.ndarray) -> np.ndarray:
         """ flattening to 1D and normalization
-            Args:
-                img: numpy array of images
-            returns:
-                normal: numpy array of normalized images
+            img: numpy array of images
+            return: normalized images
         """
-        
         # flat the images to 1D
-        dim_1 = img.reshape(img.shape[0], -1)
+        dim_1 = img.reshape(img.shape[0], img.shape[1] * img.shape[2])
         # nomalize the images with 255
         normal = dim_1 / 255.0
         return normal
@@ -110,11 +114,11 @@ class NeuralNetwork:
         self.x_train = self.input_preprocessing(x_train)
         self.x_test = self.input_preprocessing(x_test)
 
+        print(f"[***Task3***] Input pre-processing")
         print(f"x_train_flat shape: {self.x_train.shape}")
         print(f"x_test_flat shape: {self.x_test.shape}")
 
     # Task 4: output pre-processing
-
     def output_processing(self, y: np.ndarray) -> np.ndarray:
         """ converting categorical labels to  one-hot vectors
         """
@@ -122,28 +126,28 @@ class NeuralNetwork:
 
         # fancy indexing process
         out_hot_vector[np.arange(len(y)), y] = 1
+        # put the one-hot vector to the output
         return out_hot_vector
 
     def Task4_output_processing(self, y_train: np.ndarray, y_test: np.ndarray) -> tuple:
         self.y_train = self.output_processing(y_train)
         self.y_test = self.output_processing(y_test)
 
+        print(f"[***Task4***] Output pre-processing")
         print(f"y_train shape: {self.y_train.shape}")
         print(f"y_test shape: {self.y_test.shape}")
         print(f"y_train[1]: {self.y_train[1]}")
         print(f"y_test[1]: {self.y_test[1]}")
 
     # Task 5-6: creating and initializing matrices of weights
-
     def layer_weights(self, m, n):
         """ creating and initializing matrices of weights
             the sum of the variance of the weights should be 1
+            respect to the normal distribution
         ·   Function: w = 1 / sqrt(n) * random(m, n)
-            Args:
-                m: number of rows
-                n: number of columns
-            returns:
-                weights: numpy array of random weights
+            m: number of rows
+            n: number of columns
+            return random weights
         """
         return np.random.randn(m, n) * 1 / np.sqrt(n)
 
@@ -157,13 +161,13 @@ class NeuralNetwork:
             'w3': self.layer_weights(64, 10)
         }
         self.weights = weights
+        print(f"[***Task5-6***] Creating and initializing matrices of weights")
         print(f"w1 shape: {weights['w1'].shape}")
         print(f"w2 shape: {weights['w2'].shape}")
         print(f"w3 shape: {weights['w3'].shape}")
         # print(f"w3: {weights['w3']}")
 
     # Task 7: defining functions sigmoid, softmax, and sigmoid'
-
     def sigmod(self, x: np.ndarray) -> np.ndarray:
         """ sigmoid function
             Function: f(x) = 1 / (1 + e^(-x))
@@ -245,7 +249,6 @@ class NeuralNetwork:
     """
 
     # Task 8-9: forward pass
-
     def forward_pass(self, x: np.ndarray) -> tuple:
         """ forward pass
             Function: 
@@ -386,7 +389,6 @@ class NeuralNetwork:
 
 
     # Task 13: error with initial weights
-    
     def Task13_error_with_initial_weights(self, x_test: np.ndarray, y_test: np.ndarray) -> float:
         """ error with initial weights
         """
@@ -397,11 +399,10 @@ class NeuralNetwork:
             error rate: 0.9118
             error rate: 0.8988
         """
-        print(f"error rate test: {error_rate}")
+        print(f"[***Task13***] Error rate with initial weights: {error_rate}")
 
 
     # Task 14-15: training
-
     def training(self, 
                 x: np.ndarray,
                 y: np.ndarray,
@@ -443,6 +444,7 @@ class NeuralNetwork:
         start = time.time()
         for epoch in range(epochs):
             for i in range(0, len(x), batch_size):
+
                 x_batch = x[i:i+batch_size]
                 y_batch = y[i:i+batch_size]
                 a1, a2, a3 = self.forward_pass(x_batch)
@@ -461,18 +463,17 @@ class NeuralNetwork:
         np.savez(filename, w1=self.weights['w1'], w2=self.weights['w2'], w3=self.weights['w3'])
         print(f"Model saved to {filename}")
 
-
-# end of the NueralNetwork 
+# ************   end of the NueralNetwork  *****************  
 
 class HandWritingInputView:
     def __init__(self, model_path='./model_weights.npz'):
-        # 加载已训练的模型
+        # load the model
         print(f"********* HandWritingInputView *********")
         print(f"Model path: {model_path}")
         nn = NeuralNetwork(784, 128, 10, 0.001)
         nn.Task5_6_creating_and_initializing_matrices_of_weights()
         self.model = nn
-        self.load_model(model_path)  # 直接加载到 self.model.weights 中
+        self.load_model(model_path)  # load the model weights
 
         self.draw_view()
 
@@ -487,48 +488,49 @@ class HandWritingInputView:
 
     def draw_view(self):
         self.drawing = False
-        self.image = np.zeros((200, 200))  # 创建一个200x200的空白画布
+        self.image = np.zeros((200, 200))  # create a 200x200 blank canvas
         self.fig, self.ax = plt.subplots()
         self.im = self.ax.imshow(self.image, cmap='gray',  vmin=0, vmax=1)
         self.fig.canvas.mpl_connect('button_press_event', self.on_mouse_press)
         self.fig.canvas.mpl_connect('button_release_event', self.on_mouse_release)
         self.fig.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
-        self.last_x, self.last_y = None, None  # 用于保存上一次的坐标
+        self.last_x, self.last_y = None, None  # save the last point for drawing lines
 
-        # 创建按钮
+        # create a clear button
         ax_clear = plt.axes([0.8, 0.05, 0.1, 0.075])  # 按钮位置，[left, bottom, width, height]
         self.btn_clear = Button(ax_clear, '清除')
         self.btn_clear.on_clicked(self.clear_canvas)
 
     def on_mouse_press(self, event):
-        """鼠标按下事件，开始绘图"""
+        """Mouse press event, start drawing"""
         if event.inaxes == self.ax:
             self.drawing = True
             self.last_x, self.last_y = int(event.xdata), int(event.ydata)
             self.draw(self.last_x, self.last_y)
 
     def on_mouse_release(self, event):
-        """鼠标释放事件，结束绘图"""
+        """Mousre release event, stop drawing"""
         self.drawing = False
         self.last_x, self.last_y = None, None
         self.predict_digit() 
 
     def on_mouse_move(self, event):
-        """鼠标移动事件，用于绘制连续的笔画"""
+        """Mouse move event, draw lines"""  
         if self.drawing and event.inaxes == self.ax:
             x, y = int(event.xdata), int(event.ydata)
             self.draw_line(self.last_x, self.last_y, x, y)
             self.last_x, self.last_y = x, y
 
     def draw(self, x, y):
-        """在指定坐标绘制点"""
-        self.image[y-2:y+3, x-2:x+3] = 1  # 使用5x5的方块
+        """Draw a point on the canvas"""
+        self.image[y-3:y+3, x-3:x+3] = 1  # use a 7x7 block
+        # self.image[y-2:y+3, x-2:x+3] = 1  # 5 X 5
         self.im.set_data(self.image)
         self.fig.canvas.draw_idle()
 
     def draw_line(self, x0, y0, x1, y1):
-        """在两个点之间插值绘制直线，保证平滑效果"""
-        num_points = max(abs(x1 - x0), abs(y1 - y0))  # 计算插值点的数量
+        """Draw a line between two points on the canvas"""
+        num_points = max(abs(x1 - x0), abs(y1 - y0))  # Caclulate the number of points
         x_points = np.linspace(x0, x1, num_points)
         y_points = np.linspace(y0, y1, num_points)
         
@@ -536,61 +538,62 @@ class HandWritingInputView:
             self.draw(int(x), int(y))
 
     def clear_canvas(self, event):
-        """清除画布"""
-        self.image.fill(0)  # 将画布重置为全黑
+        """Clear the canvas"""
+        self.image.fill(0)  # Paint the canvas black
         self.im.set_data(self.image)
-        self.fig.canvas.draw_idle()  # 更新图像显示
+        self.fig.canvas.draw_idle()  # update the canvas
 
     def start_drawing(self):
         plt.show()
 
     def predict_digit(self):
-        """预测手绘数字"""
-        # 将画布图像缩放到28x28
+        """Predict the digit drawn on the canvas"""
+        # Scale down the image to 28x28 pixels
         resized_image = zoom(self.image, (28 / 200, 28 / 200))
-        input_data = resized_image.reshape(1, 784)  # 展平成模型的输入格式
-        prediction = self.model.predict(input_data)  # 调用 NeuralNetwork 的 predict 方法
-        print(f":::::: =>>>>>  {prediction}")
+        input_data = resized_image.reshape(1, 784)  # flatten the image to 1D
+        prediction = self.model.predict(input_data)  # Invoke the model to predict the digit
+        print(f":::: ===>>>>>  {prediction}")
 
 #end of the HandWritingInputView class
 # ________________________________________________________________________
 
-local_model_path = './model_weights.npz'
 
 
 # Step 1: Generate the model
-if  1 == 0:
+if  1 == 1:
     """ Task 0 - 19"""
     nn = NeuralNetwork(784, 128, 10, 0.001)
     nn.Task1_reading_the_MNIST_files()
-    nn.Task2_visualize_a_few_bitmap_images(nn.x_train)
+    nn.Task2_visualize_a_few_bitmap_images(nn.x_train, False)
     nn.Task3_input_preprocessing(nn.x_train, nn.x_test)
     nn.Task4_output_processing(nn.y_train, nn.y_test)
     nn.Task5_6_creating_and_initializing_matrices_of_weights()
     nn.Task13_error_with_initial_weights(nn.x_test, nn.y_test)
 
-    # """ Task 14-15"""
-    # trim = 100 
-    # x_train = nn.x_train[:trim]
-    # y_train = nn.y_train[:trim]
-    # x_test  = nn.x_test[:trim]
-    # y_test  = nn.y_test[:trim]
-    # nn.training(x_train, y_train, 
-    #             x_test, y_test,
-    #             epochs=30, learning_rate=0.001)
+    """ Task 14-15"""
+    if 1 == 1:
+        trim = 1000 
+        x_train = nn.x_train[:trim]
+        y_train = nn.y_train[:trim]
+        x_test  = nn.x_test[:trim]
+        y_test  = nn.y_test[:trim]
+        nn.training(x_train, y_train, 
+                    x_test, y_test,
+                    epochs=30, learning_rate=0.001)
 
     """ Task 16-18"""
-    nn.batch_training(nn.x_train, nn.y_train, nn.x_test, nn.y_test, epochs=60, batch_size=64, learning_rate=0.001)
-    nn.save_model(local_model_path)
+    if 1 == 0:
+        nn.batch_training(nn.x_train, nn.y_train, nn.x_test, nn.y_test, epochs=30, batch_size=64, learning_rate=0.001)
+        nn.save_model(PATH_LOCAL_MODEL)
 
 # Step 2: Test the model with handerwritting input
-if 1 == 1:
+if 1 == 0:
     """ Test the model with handerwritting input 
     1. Draw a digit on the canvas
     2. Press the button to predict the digit
     3. The prediction will be printed
     """
-    drawer = HandWritingInputView(model_path=local_model_path)
+    drawer = HandWritingInputView(model_path=PATH_LOCAL_MODEL)
     drawer.start_drawing()
 
 
